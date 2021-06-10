@@ -6,126 +6,11 @@
 
 #load  packages
 library(tidyverse) #to be tidy
-library(lme4) #to run mixed-effects models
 library(ggplot2) #to make plots
-library(phenesse) #to calculate onset & termination with Weibull distrib.
-library(sjPlot) #to plot mixed-effect model results
 library(viridis) #colorblind friendly color palette for plots
-library(MuMIn) #calculate pseudo r2 values for mixed effects models
-library(r2glmm)
-library(lmerTest)
 
-##############################
-### FUNCTIONS
-# %notin% function to remove matches
-`%notin%` = function(x,y) !(x %in% y)
-
-##   PHENOMETRIC CALCULATION FUNTIONS
-##   No error handling
-##   All functions assume a dataframe input of occurrence records with columns:
-##   name (Species), region (Continent), name2 (Species-Region dataset), 
-##   rndLat (latitudinal band), year, alt, doy (day of year of occurrence)
-
-#Calculation for extreme value  phenometrics per latitude
-ev.metric = function(df1,            #dataframe of occurrences
-                     pheno="onset",  #which phenometric, default to onset
-                     annual=T,      #estimate metrics by year or not
-                     minFP=7) {      #minimum # days to calculate effort metric
-  
-  #for each dataset & latitudinal band, filter to extreme value records & calculate effort metrics (n.occ and Sample Effort)
-  if(annual==T){
-    ev.m<-df1 %>% 
-    select(name, region, name2, rndLat, year, alt, doy) %>%
-      group_by(name,region,name2, rndLat,year) %>%
-    add_tally(name="n.occ") %>%
-    mutate(ref=paste(pheno,".ev",sep=""),
-           metric=doy, n.doy=length(unique(doy)),
-           sampleEffort=(n.doy/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T))))
-  } else {
-    ev.m<-df1 %>% 
-    select(name, region, name2, rndLat, year, alt, doy) %>%
-         group_by(name,region,name2, rndLat)  %>%
-    add_tally(name="n.occ") %>%
-    mutate(ref=paste(pheno,".ev",sep=""),
-           metric=doy, n.doy=length(unique(doy)), 
-           sampleEffort=(n.doy/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T))))
-  }
-  if(pheno=="onset") {
-    return(filter(ev.m,metric==min(metric, na.rm=T))) }
-  else if(pheno=="term") {
-    return(filter(ev.m,metric==max(metric, na.rm=T))) }
-}
-
-   
-#Calculation for weibull phenometrics
-we.est = function(doys,     #vector of occurrence DOYs used in estimation
-                  IfTerm) { #IF T, termination gives upper limit. F -> onset
-  if(IfTerm) {  suppressWarnings(weib_percentile(doys, 0.99)) } else {
-    suppressWarnings(weib_percentile(doys, 0.01))
-  }
-}
-
-we.metric = function(df1,           #dataframe of occurrences
-                     pheno="onset", #which phenometric, defaults to onset
-                     annual=T,      #estimate metrics by year or not
-                     mindoy=60,     #minimum DOY allowed for onset
-                     maxdoy=330,    #maximum DOY allowed for termination
-                     minFP=7) {     #minimum # days to calculate effort
-
-      if(annual==T){
-        weib<-df1 %>%
-        select(name, region, name2, rndLat, year, alt, doy) %>%
-        group_by(name,region,name2, rndLat, year) %>%
-        mutate(n.occ=length(unique(doy)),alt=min(alt, na.rm=T)) %>%
-        mutate(sampleEffort=(n.occ/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T)))) %>%
-        filter(n.occ>4)
-        if(nrow(weib)>4) {
-          weib<- weib%>% 
-        group_by(name,region,name2, rndLat, year) %>%
-          summarize(ref=paste(pheno,".we",sep=""),
-                n.occ=mean(n.occ,na.rm=T),
-                sampleEffort=mean(sampleEffort, na.rm=T), 
-                metric=if(pheno=="onset"){
-                  max(mindoy,we.est(doy,F)[[1]],na.rm=T)
-                } else if(pheno=="term"){
-                  min(maxdoy,we.est(doy,T)[[1]],na.rm=T)
-                  }
-                else{NA},
-                alt=min(alt, na.rm=T)) 
-      } else { 
-        weib<-df1 %>%
-          group_by(name,region,name2, rndLat, year) %>%
-        summarize(metric=NA)
-      } 
-        } else 
-          {
-        weib<-df1 %>%
-        select(name, region, name2, rndLat, year, alt, doy) %>%
-        group_by(name,region,name2, rndLat) %>%
-        mutate(n.occ=length(unique(doy)), alt=min(alt, na.rm=T)) %>%
-        mutate(sampleEffort=(n.occ/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T)))) %>%
-        filter(n.occ>4) 
-        if(nrow(weib)>4) {
-          weib<-weib%>%
-        summarize(ref=paste(pheno,".we",sep=""),
-                n.occ=mean(n.occ,na.rm=T),
-                sampleEffort=mean(sampleEffort, na.rm=T), 
-                metric=if(pheno=="onset"){
-                  max(mindoy,we.est(doy,F)[[1]],na.rm=T)
-                } else if(pheno=="term"){
-                  min(maxdoy,we.est(doy,T)[[1]],na.rm=T)}
-                else{NA},
-+                alt=min(alt, na.rm=T)) 
-        } else {
-          weib<-df1 %>%
-          group_by(name,region,name2, rndLat, year) %>%
-            summarize(metric=NA)
-
-      }
-  return(weib)
-}
-    
-      }
+#load functions
+source("Rcode/phenometric.functions.R")
 
 ############################################
 ## BEGIN DATA AGGREGATION, PHENOMETRIC ESTIMATION
@@ -138,47 +23,54 @@ datasets<-c("few.filters","many.filters")
 ###########################################3
 ##  SET PARAMETERS
 
+
+#Set parameters for onset analyses
+minFP<-7   #For calculating an effort metric, we correct for the day-of-year span for which data are available. Here we set a minimum day-of-year span at 7, as the effort metric is misleading when that span is less than 1 week.
+minDOY<- c(1,60) #Weibull distributions are not limited to reasonable day of year values, so any onset estimates prior to day of year 60 are replaced with day of year 60. 
+maxDOY<-c(365,334) #Weibull distributions are not limited to reasonable day of year values, so any termination estimates after day of year 334 are replaced with day of year 334. 
+
+#lists to store Extreme Value phenometrics
+ev.onset<-list()
+ev.term<-list()
+
+for(li in c(1:length(all.datasets))) {
+  phenodata<-all.datasets[[li]]
+  ## DATA AGGREGATIONS:
+  #1. F2021: ONLY BY LATITUDE (RNDLAT)
+  ev.onset.1<-ev.metric(phenodata,"onset",annual=F,elev.strat=F,minFP, mindoy = minDOY[li]) 
+  ev.term.1<-ev.metric(phenodata,"term",annual=F,elev.strat=F,minFP, maxdoy = maxDOY[li]) #F2020/F2021 metric
+
+  #2. LS1: BY LATITUDE AND YEAR
+  ev.onset.yr<-ev.metric(phenodata,"onset",annual=T,elev.strat=F,minFP, mindoy = minDOY[li]) 
+  ev.term.yr<-ev.metric(phenodata,"term",annual=T,elev.strat=F,minFP, maxdoy = maxDOY[li]) 
+
+  #3. NEW: BY LATITUDE, YEAR, ELEVATION
+  ev.onset.yr.alt<-ev.metric(phenodata,"onset",annual=T,elev.strat=T,minFP, mindoy = minDOY[li]) 
+  ev.term.yr.alt<-ev.metric(phenodata,"term",annual=T,elev.strat=T,minFP, maxdoy = maxDOY[li]) 
+
+  #These collect extreme value metrics for 2 data curations, 3 aggregations
+  ev.onset[[li]]<-list(ev.onset.1, ev.onset.yr, ev.onset.yr.alt)
+  ev.term[[li]]<-list(ev.term.1, ev.term.yr, ev.term.yr.alt)
+
+  filename=paste("data/phenometrics/ev.metrics.RData", sep="")
+  save(ev.onset, ev.term, file=filename)
+}
+filename=paste("data/phenometrics/all.ev.metrics.RData", sep="")
+save(ev.onset, ev.term, file=filename)
+
+
 #Weibull phenometric estimation takes time, so these variables allow us to turn the code on & off and select which datasets to estimate weibull phenometrics for
 weibull.calc<-T
 #select which datasets to estimate weibull phenometrics for
 weibull.dc<-2
 
-#Set parameters for onset analyses
-minFP<-7   #For calculating an effort metric, we correct for the day-of-year span for which data are available. Here we set a minimum day-of-year span at 7, as the effort metric is misleading when that span is less than 1 week.
-minDOY<-60 #Weibull distributions are not limited to reasonable day of year values, so any onset estimates prior to day of year 60 are replaced with day of year 60. 
-maxDOY<-330 #Weibull distributions are not limited to reasonable day of year values, so any termination estimates after day of year 330 are replaced with day of year 330. 
-
-
-
-
-#Loop through datasets, calculate phenometrics
+#lists to store Weibull phenometrics
 ev.onset<-list()
 ev.term<-list()
 
-for(li in 1:length(datasets)) {
 
-  dataset<-datasets[li]
-  phenodata<-all.datasets[[li]]
-  pheno.decade<-phenodata %>%
-    mutate(year=floor(year/nyr.agg)*nyr.agg)
- 
-  #PHENOMETRIC CALCULATION: Onset
-  EV.onset<-ev.metric(phenodata,"onset",annual=F,minFP) #F2020/F2021 metric
-  EV.YR.onset<-ev.metric(phenodata,"onset",annual=T,minFP) #annual metrics
-  EV.dec.onset<-ev.metric(pheno.decade,"onset",annual=T,minFP) #decadal metrics
 
-  #PHENOMETRIC CALCULATION: Termination
-  EV.term<-ev.metric(phenodata,"term",annual=F,minFP) #F2020/F2021 metric
-  EV.YR.term<-ev.metric(phenodata,"term",annual=T,minFP) #annual metrics
-  EV.dec.term<-ev.metric(pheno.decade,"term",annual=T,minFP) #decadal metrics
 
-  ev.onset[[li]]<-list(EV.onset, EV.YR.onset, EV.dec.onset)
-  ev.term[[li]]<-list(EV.term, EV.YR.term, EV.dec.term)
-  filename=paste("data/phenometrics_TC2/ev.",dataset,"metrics.RData", sep="")
-  save(EV.onset, EV.YR.onset, EV.dec.onset,EV.term, EV.YR.term, EV.dec.term, file=filename)
-}
-
-save(ev.onset, ev.term, file="data/phenometrics_TC2/ev.all.RData")
 
 ```
 <h2>Calculate annual phenometrics using weibull distribution, package phenesse</h2>

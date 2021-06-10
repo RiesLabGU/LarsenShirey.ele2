@@ -6,9 +6,13 @@
 #load packages
 library(tidyverse) #to be tidy
 
-#FUNCTIONS
+###########################
+## FUNCTIONS
+
+#Function for removing y from x
 `%notin%` = function(x,y) !(x %in% y)
 
+#Function to return summary statistics in format "median (min-max)"
 median.range<-function(x) {
   a<-median(x, na.rm=T)
   b<-min(x, na.rm=T)
@@ -17,6 +21,7 @@ median.range<-function(x) {
   return(d)
 }
 
+#Function to calculate summary statistics for curated datasets
 calc.sum<-function(df) {
   out1<-df %>%
     group_by(name, region, rndLat, year) %>%
@@ -44,6 +49,35 @@ calc.sum<-function(df) {
              median.range(n.onset$n), median.range(out3$nmetric))
   return(out.fin)
 }
+
+#Function to add elevation ranges to data
+add.elev<-function(df) {
+  df.2<-df %>%
+  group_by(name, region, rndLat, year) %>%
+  mutate(elev.yr=ifelse(alt>quantile(alt,0.9),10, 
+                        ifelse(alt>quantile(alt, 0.8),9,
+                          ifelse(alt>quantile(alt,0.7),8, ifelse(alt>quantile(alt, 0.6),7,
+                            ifelse(alt>quantile(alt,0.5),6, ifelse(alt>quantile(alt, 0.4),5,
+                              ifelse(alt>quantile(alt,0.3),4, ifelse(alt>quantile(alt, 0.2),3,
+                                ifelse(alt>quantile(alt,0.1),2,1)))))))))) %>%
+  group_by(name, region, rndLat, elev.yr) %>%
+  add_tally(name="ny1")
+
+  return(df.2)
+}
+
+  #Not super efficient but it does the job ... regroup 
+comb.elev<-function(df.2) {
+  for(xi in rev(c(1:10))) {
+    df.2$elev.yr[which(df.2$elev.yr==xi & df.2$ny1<10)]<-df.2$elev.yr[which(df.2$elev.yr==xi & df.2$ny1<10)]-1
+    df.2<-df.2 %>%
+      select(row.index:elev.yr) %>%
+      group_by(name, region, rndLat, year, elev.yr) %>%
+      add_tally(name="ny1")
+  }
+  return(df.2)
+}
+
 
 
 ######################################################
@@ -120,8 +154,15 @@ row.names(table.s1)<-c('Total # obs',
 write.csv(table.s1, file="output/table.s1.csv")
 
 
-#Datasets for further comparison
-cured.data1<-Filter.sp
-cured.data2<-Filter.doy2
-save(cured.data1, cured.data2, file="data/curations.RData")
+#Add elevation ranges to datasets for further comparison
+cured.data1<-comb.elev(add.elev(Filter.sp))
+cured.data1<-comb.elev(cured.data1)
+summary(cured.data1)
+table(cured.data1$elev.yr[cured.data1$ny1<5])
 
+cured.data2<-comb.elev(add.elev(Filter.doy2))
+cured.data2<-comb.elev(cured.data2)
+summary(cured.data2)
+table(cured.data2$elev.yr[cured.data2$ny1<5])
+
+save(cured.data1, cured.data2, file="data/curations.RData")
