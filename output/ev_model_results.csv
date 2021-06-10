@@ -1,0 +1,13 @@
+,Metric,Estimator,Curation,Aggregation,N.SP,N.REC,Model,Effort,EDF,AIC,r2m,r2c,Nsp.NEG,Nsp.0,Nsp.POS
+no.effort...1,onset,EV,1,Lat,87,790,alt2 + (1 | year) + (1 | name2),0,5,7681,0.06,0.47,0,1,0
+no.effort...7,onset,EV,2,Lat,87,793,alt2 + (1 | year) + (1 | name2),0,5,7408,0.07,0.52,0,1,0
+effort...2,onset,EV,1,Lat,87,790,1 + rndLat:name2 + alt2 + log(nyear) + log(n.occ) * sampleEffort + (1 | year) + (1 | name2),1,96,6763,0.36,0.96,0,75,12
+effort...8,onset,EV,2,Lat,87,793,1 + rndLat:name2 + alt2 + log(nyear) + log(n.occ) * sampleEffort + (1 | year) + (1 | name2),1,96,6634,0.34,0.97,0,72,15
+no.effort...3,onset,EV,1,Lat*yr,59,5160,1 + rndLat:name2 + alt2 + (1 | year) + (1 | name2),0,64,45528,0.44,0.96,0,27,32
+no.effort...9,onset,EV,2,Lat*yr,58,4932,1 + rndLat:name2 + alt2 + (1 | year) + (1 | name2),0,63,41860,0.42,0.96,0,19,39
+effort...4,onset,EV,1,Lat*yr,59,5160,alt2 + log(n.occ) + sampleEffort + (1 | year) + (1 | name2) + rndLat:name2 + log(n.occ):sampleEffort,1,67,43337,0.34,0.94,0,41,18
+effort...10,onset,EV,2,Lat*yr,58,4932,alt2 + log(n.occ) + sampleEffort + (1 | year) + (1 | name2) + rndLat:name2 + log(n.occ):sampleEffort,1,66,39735,0.33,0.95,0,39,19
+no.effort...5,onset,EV,1,Lat*yr*elev,59,12540,1 + rndLat:name2 + alt2 + (1 | year) + (1 | name2),0,64,104913,0.43,0.97,0,35,24
+no.effort...11,onset,EV,2,Lat*yr*elev,58,12040,1 + rndLat:name2 + alt2 + (1 | year) + (1 | name2),0,63,97368,0.4,0.97,0,31,27
+effort...6,onset,EV,1,Lat*yr*elev,59,12540,alt2 + log(n.occ) + sampleEffort + (1 | year) + (1 | name2) + rndLat:name2 + log(n.occ):sampleEffort,1,67,102234,0.37,0.97,0,40,19
+effort...12,onset,EV,2,Lat*yr*elev,58,12040,alt2 + log(n.occ) + sampleEffort + (1 | year) + (1 | name2) + rndLat:name2,1,65,94725,0.36,0.98,0,36,22

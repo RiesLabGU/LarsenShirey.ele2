@@ -83,7 +83,13 @@ model.compar<- function(data) {
 }
 
 ########################################
-## PARAMETERS
+## PARAMETERS & output lists
+
+#for models
+aggregs<-c("Lat","Lat*yr","Lat*yr*elev")
+ev.model.output<-list()
+we.model.output<-list()
+
 
 #for visualizations
 q_colors =  12 # for no particular reason
@@ -91,22 +97,25 @@ v_colors =  viridis(q_colors, option = 'A')
 v2<-v_colors[c(2,4,6,8)]
 
 
+
 ########################################
 ## Load phenometrics
-
 
 ## Extreme Value phenometrics
 load("data/phenometrics/all.ev.metrics.RData")
 
+## Weibull phenometrics (in process)
+load("data/phenometrics/we.metrics.RData")
+
+
+########################################################
+###  RUN EV MIXED EFFECT MODELS
 #ev.onset and ev.term each have 2 lists of phenometric datasets, one for each data curation
 #each list has 3 datasets, representing different aggregations 
+metric<-"EV"
 
-##
-aggregs<-c("Lat","Lat*yr","Lat*yr*elev")
-model.output<-list()
+pheno<-"onset"
 for(i in 1:length(ev.onset)) {
-  pheno<-"onset"
-  metric<-"EV"
   curate<-i
   for(j in 1:length(ev.onset[[i]])) {
     aggreg<-  aggregs[j]
@@ -116,13 +125,70 @@ for(i in 1:length(ev.onset)) {
     ntot<-nrow(model.input)
     params<-as.data.frame(rbind(c(pheno, metric, curate, aggreg, nsp, ntot),c(pheno, metric, curate, aggreg, nsp, ntot)))    
     names(params)<-c("Metric","Estimator","Curation","Aggregation","N.SP","N.REC")
-    model.output[[(i-1)*length(ev.onset[[i]])+j]]<-as.data.frame(cbind(params,model.compar(model.input)))
+    ev.model.output[[length(ev.model.output)+1]]<-as.data.frame(cbind(params,model.compar(model.input)))
 }
 }
   
-  
-(rsult<-bind_rows(model.output))
-write.csv(rsult,file="output/ev_model_results.csv")
+### TERMINATION MODELS
+pheno<-"term"
+for(i in 1:length(ev.term)) {
+  curate<-i
+  for(j in 1:length(ev.term[[i]])) {
+    aggreg<-  aggregs[j]
+    model.input<-ev.term[[i]][[j]]
+    effort<-T
+    nsp<-length(unique(model.input$name2))
+    ntot<-nrow(model.input)
+    params<-as.data.frame(rbind(c(pheno, metric, curate, aggreg, nsp, ntot),c(pheno, metric, curate, aggreg, nsp, ntot)))    
+    names(params)<-c("Metric","Estimator","Curation","Aggregation","N.SP","N.REC")
+    ev.model.output[[length(ev.model.output)+1]]<-as.data.frame(cbind(params,model.compar(model.input)))
+  }
+}
+
+(ev.result<-bind_rows(ev.model.output))
+write.csv(ev.result,file="output/ev_model_results.csv")
 
 
+
+########################################################
+###  RUN EV MIXED EFFECT MODELS
+#ev.onset and ev.term each have 2 lists of phenometric datasets, one for each data curation
+#each list has 3 datasets, representing different aggregations 
+metric<-"WE"
+
+pheno<-"onset"
+
+for(i in 1:length(we.onset)) {
+  curate<-i
+  for(j in 1:length(we.onset[[i]])) {
+    aggreg<-  aggregs[j]
+    model.input<-we.onset[[i]][[j]]
+    effort<-T
+    nsp<-length(unique(model.input$name2))
+    ntot<-nrow(model.input)
+    params<-as.data.frame(rbind(c(pheno, metric, curate, aggreg, nsp, ntot),c(pheno, metric, curate, aggreg, nsp, ntot)))    
+    names(params)<-c("Metric","Estimator","Curation","Aggregation","N.SP","N.REC")
+    we.model.output[[length(we.model.output)+1]]<-as.data.frame(cbind(params,model.compar(model.input)))
+  }
+}
+
+pheno<-"term"
+
+for(i in 1:length(we.term)) {
+  curate<-i
+  for(j in 1:length(we.term[[i]])) {
+    aggreg<-  aggregs[j]
+    model.input<-we.term[[i]][[j]]
+    effort<-T
+    nsp<-length(unique(model.input$name2))
+    ntot<-nrow(model.input)
+    params<-as.data.frame(rbind(c(pheno, metric, curate, aggreg, nsp, ntot),c(pheno, metric, curate, aggreg, nsp, ntot)))    
+    names(params)<-c("Metric","Estimator","Curation","Aggregation","N.SP","N.REC")
+    we.model.output[[length(we.model.output)+1]]<-as.data.frame(cbind(params,model.compar(model.input)))
+  }
+}
+
+
+(we.result<-bind_rows(we.model.output))
+write.csv(we.result,file="output/we_model_results.csv")
 

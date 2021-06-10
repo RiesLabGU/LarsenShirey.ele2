@@ -57,3 +57,36 @@ for(li in c(1:length(all.datasets))) {
 }
 filename=paste("data/phenometrics/all.ev.metrics.RData", sep="")
 save(ev.onset, ev.term, file=filename)
+
+
+#################################################################3
+###    WEIBULL PHENOMETRICS
+
+#lists to store Weibull phenometrics
+we.onset<-list()
+we.term<-list()
+
+for(li in c(1:length(all.datasets))) {
+  phenodata<-all.datasets[[li]]
+  ## DATA AGGREGATIONS:
+  #1. F2021: ONLY BY LATITUDE (RNDLAT)
+  we.onset.1<-we.metric(phenodata,"onset",annual=F,elev.strat=F,minFP, mindoy = minDOY[li]) 
+  we.term.1<-we.metric(phenodata,"term",annual=F,elev.strat=F,minFP, maxdoy = maxDOY[li]) #F2020/F2021 metric
+  
+  #2. LS1: BY LATITUDE AND YEAR
+  we.onset.yr<-we.metric(phenodata,"onset",annual=T,elwe.strat=F,minFP, mindoy = minDOY[li]) 
+  we.term.yr<-we.metric(phenodata,"term",annual=T,elwe.strat=F,minFP, maxdoy = maxDOY[li]) 
+  
+  #3. NEW: BY LATITUDE, YEAR, ELEVATION
+  we.onset.yr.alt<-we.metric(phenodata,"onset",annual=T,elev.strat=T,minFP, mindoy = minDOY[li]) 
+  we.term.yr.alt<-we.metric(phenodata,"term",annual=T,elev.strat=T,minFP, maxdoy = maxDOY[li]) 
+  
+  #These collect extreme value metrics for 2 data curations, 3 aggregations
+  we.onset[[li]]<-list(we.onset.1, we.onset.yr, we.onset.yr.alt)
+  we.term[[li]]<-list(we.term.1, we.term.yr, we.term.yr.alt)
+  
+  filename=paste("data/phenometrics/we.metrics.RData", sep="")
+  save(we.onset, we.term, file=filename)
+}
+filename=paste("data/phenometrics/all.we.metrics.RData", sep="")
+save(we.onset, we.term, file=filename)
