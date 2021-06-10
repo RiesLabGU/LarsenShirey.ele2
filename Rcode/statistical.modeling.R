@@ -116,11 +116,13 @@ for(i in 1:length(ev.onset)) {
     ntot<-nrow(model.input)
     params<-as.data.frame(rbind(c(pheno, metric, curate, aggreg, nsp, ntot),c(pheno, metric, curate, aggreg, nsp, ntot)))    
     names(params)<-c("Metric","Estimator","Curation","Aggregation","N.SP","N.REC")
-    model.output[[(i-1)*j+j]]<-as.data.frame(cbind(model.compar(model.input), params))
+    model.output[[(i-1)*length(ev.onset[[i]])+j]]<-as.data.frame(cbind(params,model.compar(model.input)))
 }
 }
   
   
+(rsult<-bind_rows(model.output))
+write.csv(rsult,file="output/ev_model_results.csv")
 
 
 
