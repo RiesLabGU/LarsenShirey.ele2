@@ -16,9 +16,9 @@ source("Rcode/phenometric.functions.R")
 load("data/curations.RData")
 
 # cured.data2)
-occurrences<-list()
-for(i in 1:length(unique(cured.data2$name2))) {
-  occurrences[[i]]<-filter(cured.data2, name==unique(cured.data2$name2)[i]) 
+occurrences.a<-list()
+for(i in 1:10) { #length(unique(cured.data2$name2))) {
+  occurrences.a[[i]]<-filter(cured.data2, name==unique(cured.data2$name2)[i]) 
 }
 
 
@@ -35,12 +35,33 @@ est.term.alt<-function(X) {
 }
 
 #estimate onset
-we.onset.yr.alt<-lapply(occurrences, est.onset.alt)
+we.onset.yr.alt<-lapply(occurrences.a, est.onset.alt)
 
-save(we.onset.yr.alt,file="data/phenometrics/we.onset2.yr.alt.RData")
+save(we.onset.yr.alt,file="data/phenometrics/we.onset2a.yr.alt.RData")
 
 #estimate termination
-we.term.yr.alt<-lapply(occurrences, est.term.alt)
+we.term.yr.alt<-lapply(occurrences.a, est.term.alt)
 
-save(we.term.yr.alt,file="data/phenometrics/we.term2.yr.alt.RData")
+save(we.term.yr.alt,file="data/phenometrics/we.term2a.yr.alt.RData")
+
+
+
+# the rest of the species
+occurrences.b<-list()
+for(i in 11:length(unique(cured.data2$name2))) {
+  occurrences.b[[i-10]]<-filter(cured.data2, name==unique(cured.data2$name2)[i]) 
+}
+
+
+#################################################################3
+
+#estimate onset
+we.onset.yr.alt<-lapply(occurrences.b, est.onset.alt)
+
+save(we.onset.yr.alt,file="data/phenometrics/we.onset2b.yr.alt.RData")
+
+#estimate termination
+we.term.yr.alt<-lapply(occurrences.b, est.term.alt)
+
+save(we.term.yr.alt,file="data/phenometrics/we.term2b.yr.alt.RData")
 
