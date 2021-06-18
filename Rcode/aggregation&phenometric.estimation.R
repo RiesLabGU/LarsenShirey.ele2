@@ -65,28 +65,45 @@ save(ev.onset, ev.term, file=filename)
 #lists to store Weibull phenometrics
 we.onset<-list()
 we.term<-list()
+we.onset.1<-list()
+we.term.1<-list()
+we.onset.2<-list()
+we.term.2<-list()
 
 for(li in c(1:length(all.datasets))) {
   phenodata<-all.datasets[[li]]
   ## DATA AGGREGATIONS:
   #1. F2021: ONLY BY LATITUDE (RNDLAT)
-  we.onset.1<-we.metric(phenodata,"onset",annual=F,elev.strat=F,minFP, mindoy = minDOY[li]) 
-  we.term.1<-we.metric(phenodata,"term",annual=F,elev.strat=F,minFP, maxdoy = maxDOY[li]) #F2020/F2021 metric
+  for(ji in 1:length(sort(unique(phenodata$name2)))) {
+    sp.ji<-sort(unique(phenodata$name2))[ji]
+    we.onset.lat<-we.metric(filter(phenodata, name2==sp.ji),"onset",annual=F,elev.strat=F,minFP, mindoy = minDOY[li]) 
+    we.term.lat<-we.metric(filter(phenodata, name2==sp.ji),"term",annual=F,elev.strat=F,minFP, maxdoy = maxDOY[li]) #F2020/F2021 metric
   
   #2. LS1: BY LATITUDE AND YEAR
-  we.onset.yr<-we.metric(phenodata,"onset",annual=T,elwe.strat=F,minFP, mindoy = minDOY[li]) 
-  we.term.yr<-we.metric(phenodata,"term",annual=T,elwe.strat=F,minFP, maxdoy = maxDOY[li]) 
+  we.onset.yr<-we.metric(filter(phenodata, name2==sp.ji),"onset",annual=T,elev.strat=F,minFP, mindoy = minDOY[li]) 
+  we.term.yr<-we.metric(filter(phenodata, name2==sp.ji),"term",annual=T,elev.strat=F,minFP, maxdoy = maxDOY[li]) 
   
   #3. NEW: BY LATITUDE, YEAR, ELEVATION
-  we.onset.yr.alt<-we.metric(phenodata,"onset",annual=T,elev.strat=T,minFP, mindoy = minDOY[li]) 
-  we.term.yr.alt<-we.metric(phenodata,"term",annual=T,elev.strat=T,minFP, maxdoy = maxDOY[li]) 
+  we.onset.yr.alt<-we.metric(filter(phenodata, name2==sp.ji),"onset",annual=T,elev.strat=T,minFP, mindoy = minDOY[li]) 
+  we.term.yr.alt<-we.metric(filter(phenodata, name2==sp.ji),"term",annual=T,elev.strat=T,minFP, maxdoy = maxDOY[li]) 
   
   #These collect extreme value metrics for 2 data curations, 3 aggregations
-  we.onset[[li]]<-list(we.onset.1, we.onset.yr, we.onset.yr.alt)
-  we.term[[li]]<-list(we.term.1, we.term.yr, we.term.yr.alt)
+  filename=paste("data/phenometrics/we.metrics",li,"-",ji,".RData", sep="")
+  if(li==1) {
+    we.onset.1[[ji]]<-list(we.onset.lat, we.onset.yr, we.onset.yr.alt)
+    we.term.1[[ji]]<-list(we.term.lat, we.term.yr, we.term.yr.alt)
+    save(we.onset.1, we.term.1, file=filename)
+  } else if(li==2) {
+    we.onset.2[[ji]]<-list(we.onset.lat, we.onset.yr, we.onset.yr.alt)
+    we.term.2[[ji]]<-list(we.term.lat, we.term.yr, we.term.yr.alt)
+    save(we.onset.2, we.term.2, file=filename)
+  }
   
-  filename=paste("data/phenometrics/we.metrics.RData", sep="")
-  save(we.onset, we.term, file=filename)
+  }
+  if(li==1) {
+  filename=paste("data/phenometrics/we.metrics",li,".RData", sep="")
+  save(we.onset.1, we.term.1, file=filename)
+  }
 }
-filename=paste("data/phenometrics/all.we.metrics.RData", sep="")
-save(we.onset, we.term, file=filename)
+filename=paste("data/phenometrics/data1.we.metrics.RData", sep="")
+save(we.onset.1, we.term.1,we.onset.2, we.term.2, file=filename)
