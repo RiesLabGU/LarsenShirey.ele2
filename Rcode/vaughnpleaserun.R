@@ -8,7 +8,66 @@
 library(tidyverse) #to be tidy
 
 #load functions
-source("Rcode/phenometric.functions.R")
+#source("Rcode/phenometric.functions.R")
+#################################################################3
+###    WEIBULL PHENOMETRICS FUNCTIONS
+we.est.o<-function(doys) {
+  y<-suppressWarnings(weib_percentile(doys, 0.01))
+  return(y[[1]])
+}
+we.est.t<-function(doys) {
+  y<-suppressWarnings(weib_percentile(doys, 0.99))
+  return(y[[1]])
+}
+
+#functions to call in lapply
+est.onset.alt<-function(X) {
+  weib<-X %>%
+    dplyr::select(name, region, name2, rndLat, year, alt, doy, elev.yr) %>%
+    group_by(name,region,name2, rndLat, year, elev.yr) %>%
+    dplyr::mutate(n.occ=length(unique(doy)),alt=min(alt, na.rm=T)) %>%
+    dplyr::mutate(sampleEffort=(n.occ/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,7, na.rm=T)))) %>%
+    filter(n.occ>=5)
+  if(nrow(weib)>=5) {
+    #Calculate phenometrics!
+    weib<- weib%>% 
+      group_by(name,region,name2, rndLat, year, elev.yr) %>%
+      summarize(ref=paste(pheno,".we",sep=""),
+                n.occ=mean(n.occ,na.rm=T),
+                sampleEffort=mean(sampleEffort, na.rm=T), 
+                metric=max(1,we.est.o(doy),na.rm=T),
+                alt=min(alt, na.rm=T)) 
+  } else { 
+    #Don't calculate metrics if data are insufficient
+    weib<-df1 %>%
+      group_by(name,region,name2, rndLat, year,elev.yr) %>%
+      summarize(metric=NA)
+  } 
+}
+#functions to call in lapply
+est.term.alt<-function(X) {
+  weib<-X %>%
+    dplyr::select(name, region, name2, rndLat, year, alt, doy, elev.yr) %>%
+    group_by(name,region,name2, rndLat, year, elev.yr) %>%
+    dplyr::mutate(n.occ=length(unique(doy)),alt=min(alt, na.rm=T)) %>%
+    dplyr::mutate(sampleEffort=(n.occ/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,7, na.rm=T)))) %>%
+    filter(n.occ>=5)
+  if(nrow(weib)>=5) {
+    #Calculate phenometrics!
+    weib<- weib%>% 
+      group_by(name,region,name2, rndLat, year, elev.yr) %>%
+      summarize(ref=paste(pheno,".we",sep=""),
+                n.occ=mean(n.occ,na.rm=T),
+                sampleEffort=mean(sampleEffort, na.rm=T), 
+                metric=min(365,we.est.t(doy),na.rm=T),
+                alt=min(alt, na.rm=T)) 
+  } else { 
+    #Don't calculate metrics if data are insufficient
+    weib<-df1 %>%
+      group_by(name,region,name2, rndLat, year, elev.yr) %>%
+      summarize(metric=NA)
+  } 
+}
 
 ############################################
 ## BEGIN DATA AGGREGATION, PHENOMETRIC ESTIMATION
@@ -18,17 +77,9 @@ load("data/curations.RData")
 # cured.data2)
 occurrences<-split(cured.data2, cured.data2$name2)
 occurrences.a<-occurrences[c(1:10)]
+
 #################################################################3
 ###    WEIBULL PHENOMETRICS
-
-
-#functions to call in lapply
-est.onset.alt<-function(X) {
-  we.metric(X,"onset",annual=T,elev.strat=T,7, mindoy = 60) 
-}
-est.term.alt<-function(X) {
-  we.metric(X,"term",annual=T,elev.strat=T,7, maxdoy = 334) 
-}
 
 #estimate onset
 we.onset.yr.alt<-lapply(occurrences.a, est.onset.alt)
