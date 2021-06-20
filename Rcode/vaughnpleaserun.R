@@ -16,12 +16,8 @@ source("Rcode/phenometric.functions.R")
 load("data/curations.RData")
 
 # cured.data2)
-occurrences.a<-list()
-for(i in 1:10) { #length(unique(cured.data2$name2))) {
-  occurrences.a[[i]]<-filter(cured.data2, name2==unique(cured.data2$name2)[i]) 
-}
-
-
+occurrences<-split(cured.data2, cured.data2$name2)
+occurrences.a<-occurrences[c(1:10)]
 #################################################################3
 ###    WEIBULL PHENOMETRICS
 
@@ -47,10 +43,7 @@ save(we.term.yr.alt,file="data/phenometrics/we.term2a.yr.alt.RData")
 
 
 # the rest of the species
-occurrences.b<-list()
-for(i in 11:length(unique(cured.data2$name2))) {
-  occurrences.b[[i-10]]<-filter(cured.data2, name==unique(cured.data2$name2)[i]) 
-}
+occurrences.b<-occurrences[c(11:length(occurrences))]
 
 
 #################################################################3
