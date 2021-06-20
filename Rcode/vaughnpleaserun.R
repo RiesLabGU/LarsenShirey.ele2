@@ -18,7 +18,7 @@ load("data/curations.RData")
 # cured.data2)
 occurrences.a<-list()
 for(i in 1:10) { #length(unique(cured.data2$name2))) {
-  occurrences.a[[i]]<-filter(cured.data2, name==unique(cured.data2$name2)[i]) 
+  occurrences.a[[i]]<-filter(cured.data2, name2==unique(cured.data2$name2)[i]) 
 }
 
 
