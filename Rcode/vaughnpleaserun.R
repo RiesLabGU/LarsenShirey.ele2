@@ -33,7 +33,7 @@ est.onset.alt<-function(X) {
     #Calculate phenometrics!
     weib<- weib%>% 
       group_by(name,region,name2, rndLat, year, elev.yr) %>%
-      summarize(ref=paste(pheno,".we",sep=""),
+      summarize(ref=paste("onset.we"),
                 n.occ=mean(n.occ,na.rm=T),
                 sampleEffort=mean(sampleEffort, na.rm=T), 
                 metric=max(1,we.est.o(doy),na.rm=T),
@@ -57,7 +57,7 @@ est.term.alt<-function(X) {
     #Calculate phenometrics!
     weib<- weib%>% 
       group_by(name,region,name2, rndLat, year, elev.yr) %>%
-      summarize(ref=paste(pheno,".we",sep=""),
+      summarize(ref="term.we"),
                 n.occ=mean(n.occ,na.rm=T),
                 sampleEffort=mean(sampleEffort, na.rm=T), 
                 metric=min(365,we.est.t(doy),na.rm=T),
