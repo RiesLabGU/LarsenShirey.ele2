@@ -1,6 +1,6 @@
 #Larsen & Shirey
 #Quantifying impacts of data curation, aggregation, phenometric estimation
-#Project started 2021-03, Updated 2021-06
+#Project started 2021-03, Updated 2021-08
 #HERE: Functions for phenometric estimation
 
 #load  packages
@@ -26,9 +26,8 @@ ev.metric = function(df1,               #dataframe of occurrences
                      elev.strat=F,      #estimate metrics by elevation range or not
                      n.occ.threshold=5, #minimum number of occurrences for calculating phenometrics
                      mindoy=60,         #minimum DOY allowed for onset
-                     maxdoy=330,        #maximum DOY allowed for termination
-                     minFP=7) {         #minimum # days to calculate effort metric
-  
+                     maxdoy=334) {        #maximum DOY allowed for termination
+
   if(annual==F & elev.strat==T) {message("Elevation stratification is only available for annual metrics. Annual metrics will be calculated.")
     annual<-T}
   
@@ -47,7 +46,6 @@ ev.metric = function(df1,               #dataframe of occurrences
         dplyr::mutate(ref=paste(pheno,".ev",sep=""),unit=paste(name2,rndLat,year,elev.yr,sep=""),
                metric=doy, n.doy=length(unique(doy)),
                n.max=max(n.m, na.rm=T), n.14.on=sum(n.14.onset),n.14.term=sum(n.14.offset))
-               #sampleEffort=(n.doy/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T))))
     } else {
       #Group & estimate effort by rndLat*year
      ev.m<-df1 %>% 
@@ -61,7 +59,6 @@ ev.metric = function(df1,               #dataframe of occurrences
         dplyr::mutate(ref=paste(pheno,".ev",sep=""),unit=paste(name2,rndLat,year,sep=""),
                metric=doy, n.doy=length(unique(doy)),
                n.max=max(n.m, na.rm=T),  n.14.on=sum(n.14.onset),n.14.term=sum(n.14.offset))
-              #sampleEffort=(n.doy/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T))))
     }
   } else {
     #Group & estimate effort by rndLat
@@ -77,7 +74,6 @@ ev.metric = function(df1,               #dataframe of occurrences
              metric=doy, n.doy=length(unique(doy)), 
              n.max=max(n.m, na.rm=T), 
              n.14.on=sum(n.14.onset),n.14.term=sum(n.14.offset))
-             #sampleEffort=(n.doy/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T))))
   }
   if(pheno=="onset") {
     ev.m<-ev.m %>% 
@@ -106,10 +102,9 @@ we.metric = function(df1,               #dataframe of occurrences
                      annual=T,          #estimate metrics by year or not
                      elev.strat=F,      #estimate metrics by elevation range or not
                      mindoy=60,         #minimum DOY allowed for onset
-                     maxdoy=330,        #maximum DOY allowed for termination
-                     n.occ.threshold=5, #minimum number of occurrences for calculating phenometrics
-                     minFP=7) {         #minimum # days to calculate effort
-  
+                     maxdoy=334,        #maximum DOY allowed for termination
+                     n.occ.threshold=5) { #minimum number of occurrences for calculating phenometrics
+
   if(annual==F & elev.strat==T) {
     message("Elevation stratification is only available for annual metrics. Annual metrics will be calculated.")
     annual<-T
@@ -149,7 +144,6 @@ we.metric = function(df1,               #dataframe of occurrences
         dplyr::select(name, region, name2, rndLat, year, alt, doy) %>%
         group_by(name,region,name2, rndLat, year) %>%
         dplyr::mutate(n.occ=length(unique(doy)),alt=min(alt, na.rm=T)) %>%
-        dplyr::mutate(sampleEffort=(n.occ/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T)))) %>%
         filter(n.occ>=n.occ.threshold)
       if(nrow(weib)>=n.occ.threshold) {
         #Calculate phenometrics!
@@ -157,7 +151,6 @@ we.metric = function(df1,               #dataframe of occurrences
           group_by(name,region,name2, rndLat, year) %>%
           summarize(ref=paste(pheno,".we",sep=""),
                     n.occ=mean(n.occ,na.rm=T),
-                    sampleEffort=mean(sampleEffort, na.rm=T), 
                     metric=if(pheno=="onset"){
                       max(mindoy,we.est(doy,F)[[1]],na.rm=T)
                     } else if(pheno=="term"){
@@ -178,14 +171,12 @@ we.metric = function(df1,               #dataframe of occurrences
       dplyr::select(name, region, name2, rndLat, year, alt, doy) %>%
       group_by(name,region,name2, rndLat) %>%
       dplyr::mutate(n.occ=length(unique(doy)), alt=min(alt, na.rm=T)) %>%
-      dplyr::mutate(sampleEffort=(n.occ/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T)))) %>%
       filter(n.occ>=n.occ.threshold) 
     if(nrow(weib)>=n.occ.threshold) {
       #Calculate phenometrics!
       weib<-weib%>%
         summarize(ref=paste(pheno,".we",sep=""),
                 n.occ=mean(n.occ,na.rm=T),
-                sampleEffort=mean(sampleEffort, na.rm=T), 
                 metric=if(pheno=="onset") {
                   max(mindoy,we.est(doy,F)[[1]],na.rm=T)
                   } else if(pheno=="term") {

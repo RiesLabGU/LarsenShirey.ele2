@@ -35,28 +35,29 @@ ev.term<-list()
 for(li in c(1:length(all.datasets))) {
   phenodata<-all.datasets[[li]]
   ## DATA AGGREGATIONS:
-  #1. F2021: ONLY BY LATITUDE (RNDLAT)
-  ev.onset.L<-ev.metric(phenodata,"onset",annual=F,elev.strat=F,minFP=7, mindoy = minDOY[li]) 
-  ev.term.L<-ev.metric(phenodata,"term",annual=F,elev.strat=F,minFP=7, maxdoy = maxDOY[li]) #F2020/F2021 metric
+  #1. F2021: ONLY BY LATITUDE (RNDLAT) (closest to ELE13419, ELE13739 metrics)
+  ev.onset.L<-ev.metric(phenodata, "onset", annual=F, elev.strat=F, mindoy = minDOY[li]) 
+  ev.term.L<-ev.metric(phenodata, "term", annual=F, elev.strat=F, maxdoy = maxDOY[li]) 
 
-  #2. LS1: BY LATITUDE AND YEAR
-  ev.onset.LY<-ev.metric(phenodata,"onset",annual=T,elev.strat=F,minFP=7, mindoy = minDOY[li]) 
-  ev.term.LY<-ev.metric(phenodata,"term",annual=T,elev.strat=F,minFP=7, maxdoy = maxDOY[li]) 
+  #2. LS1: BY LATITUDE AND YEAR (closest to ELE13731 metrics)
+  ev.onset.LY<-ev.metric(phenodata, "onset", annual=T, elev.strat=F, mindoy = minDOY[li]) 
+  ev.term.LY<-ev.metric(phenodata, "term", annual=T, elev.strat=F, maxdoy = maxDOY[li]) 
 
   #3. NEW: BY LATITUDE, YEAR, ELEVATION
-  ev.onset.LYE<-ev.metric(phenodata,"onset",annual=T,elev.strat=T,minFP=7, mindoy = minDOY[li]) 
-  ev.term.LYE<-ev.metric(phenodata,"term",annual=T,elev.strat=T,minFP=7, maxdoy = maxDOY[li]) 
+  ev.onset.LYE<-ev.metric(phenodata, "onset", annual=T, elev.strat=T, mindoy = minDOY[li]) 
+  ev.term.LYE<-ev.metric(phenodata, "term", annual=T, elev.strat=T, maxdoy = maxDOY[li]) 
 
   #These collect extreme value metrics for 2 data curations, 3 aggregations
   ev.onset[[li]]<-list(ev.onset.L, ev.onset.LY, ev.onset.LYE)
   ev.term[[li]]<-list(ev.term.L, ev.term.LY, ev.term.LYE)
 
-  filename=paste("data/phenometrics/ev.metrics.li.RData", sep="")
-  save(ev.onset, ev.term, file=filename)
 }
-filename=paste("data/phenometrics/ev.metrics.RData", sep="")
-save(ev.onset, ev.term, file=filename)
+onset.file=paste("data/phenometrics/ev.onset.RData", sep="")
+save(ev.onset, file=onset.file)
+term.file=paste("data/phenometrics/ev.term.RData", sep="")
+save(ev.term, file=term.file)
 
+rm(ev.onset, ev.term, onset.file, term.file)
 
 #################################################################3
 ###    WEIBULL PHENOMETRICS
@@ -75,8 +76,8 @@ for(li in c(1:length(all.datasets))) {
   #1. F2021: ONLY BY LATITUDE (RNDLAT)
   for(ji in 1:length(sort(unique(phenodata$name2)))) {
     sp.ji<-sort(unique(phenodata$name2))[ji]
-    we.onset.lat<-we.metric(filter(phenodata, name2==sp.ji),"onset",annual=F,elev.strat=F,minFP, mindoy = minDOY[li]) 
-    we.term.lat<-we.metric(filter(phenodata, name2==sp.ji),"term",annual=F,elev.strat=F,minFP, maxdoy = maxDOY[li]) #F2020/F2021 metric
+    we.onset.lat<-we.metric(filter(phenodata, name2==sp.ji), "onset", annual=F, elev.strat=F, mindoy = minDOY[li]) 
+    we.term.lat<-we.metric(filter(phenodata, name2==sp.ji), "term", annual=F, elev.strat=F, maxdoy = maxDOY[li]) #F2020/F2021 metric
   
   #2. LS1: BY LATITUDE AND YEAR
   we.onset.yr<-we.metric(filter(phenodata, name2==sp.ji),"onset",annual=T,elev.strat=F,minFP, mindoy = minDOY[li]) 
