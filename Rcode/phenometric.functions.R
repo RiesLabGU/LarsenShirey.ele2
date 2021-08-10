@@ -37,41 +37,56 @@ ev.metric = function(df1,               #dataframe of occurrences
     if(elev.strat) {
       #Group & estimate effort by rndLat*year*elevation range
       ev.m<-df1 %>% 
-        select(name, region, name2, rndLat, year, alt, elev.yr, doy) %>%
+        dplyr::select(name, region, name2, rndLat, year, alt, elev.yr, doy) %>%
+        group_by(name, region, name2, rndLat, year, elev.yr, doy) %>%
+        add_tally(name="n.m") %>%
+        mutate(n.14.onset=ifelse(doy-min(doy, na.rm=T)<15,1,0), n.14.offset=ifelse(max(doy, na.rm=T)-doy<15,1,0)) %>%
         group_by(name,region,name2, rndLat,year, elev.yr) %>%
         add_tally(name="n.occ") %>%
         filter(n.occ>=n.occ.threshold) %>%
-        mutate(ref=paste(pheno,".ev",sep=""),unit=paste(name2,rndLat,year,elev.yr,sep=""),
+        dplyr::mutate(ref=paste(pheno,".ev",sep=""),unit=paste(name2,rndLat,year,elev.yr,sep=""),
                metric=doy, n.doy=length(unique(doy)),
-               sampleEffort=(n.doy/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T))))
+               n.max=max(n.m, na.rm=T), n.14.on=sum(n.14.onset),n.14.term=sum(n.14.offset))
+               #sampleEffort=(n.doy/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T))))
     } else {
       #Group & estimate effort by rndLat*year
-      ev.m<-df1 %>% 
-        select(name, region, name2, rndLat, year, alt, doy) %>%
-        group_by(name,region,name2, rndLat,year) %>%
+     ev.m<-df1 %>% 
+       dplyr::select(name, region, name2, rndLat, year, alt, doy) %>%
+       group_by(name, region, name2, rndLat, year, doy) %>%
+       add_tally(name="n.m") %>%
+       mutate(n.14.onset=ifelse(doy-min(doy, na.rm=T)<15,1,0), n.14.offset=ifelse(max(doy, na.rm=T)-doy<15,1,0)) %>%
+       group_by(name,region,name2, rndLat,year) %>%
         add_tally(name="n.occ") %>%
         filter(n.occ>=n.occ.threshold) %>%
-        mutate(ref=paste(pheno,".ev",sep=""),unit=paste(name2,rndLat,year,sep=""),
+        dplyr::mutate(ref=paste(pheno,".ev",sep=""),unit=paste(name2,rndLat,year,sep=""),
                metric=doy, n.doy=length(unique(doy)),
-               sampleEffort=(n.doy/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T))))
+               n.max=max(n.m, na.rm=T),  n.14.on=sum(n.14.onset),n.14.term=sum(n.14.offset))
+              #sampleEffort=(n.doy/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T))))
     }
   } else {
     #Group & estimate effort by rndLat
     ev.m<-df1 %>% 
-      select(name, region, name2, rndLat, year, alt, doy) %>%
+      dplyr::select(name, region, name2, rndLat, year, alt, doy) %>%
+      group_by(name, region, name2, rndLat, year, doy) %>%
+      add_tally(name="n.m") %>%
+      mutate(n.14.onset=ifelse(doy-min(doy, na.rm=T)<15,1,0), n.14.offset=ifelse(max(doy, na.rm=T)-doy<15,1,0)) %>%
       group_by(name,region,name2, rndLat)  %>%
       add_tally(name="n.occ") %>%
       filter(n.occ>=n.occ.threshold) %>%
-      mutate(ref=paste(pheno,".ev",sep=""), unit=paste(name2,rndLat,sep=""),
+      dplyr::mutate(ref=paste(pheno,".ev",sep=""), unit=paste(name2,rndLat,sep=""),
              metric=doy, n.doy=length(unique(doy)), 
-             sampleEffort=(n.doy/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T))))
+             n.max=max(n.m, na.rm=T), 
+             n.14.on=sum(n.14.onset),n.14.term=sum(n.14.offset))
+             #sampleEffort=(n.doy/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T))))
   }
   if(pheno=="onset") {
-    ev.m<-ev.m %>% filter(doy>=mindoy) %>% 
-      group_by(unit) %>% filter(metric==min(metric, na.rm=T))
+    ev.m<-ev.m %>% 
+      group_by(unit) %>% filter(metric==min(metric, na.rm=T)) %>%
+      dplyr::mutate(metric=ifelse((metric>=mindoy),metric, mindoy), n.14=n.14.on) 
   } else if(pheno=="term") {
-    ev.m<-ev.m %>% filter(doy<=maxdoy) %>% 
-      group_by(unit) %>% filter(metric==max(metric, na.rm=T))
+    ev.m<-ev.m %>% 
+      group_by(unit) %>% filter(metric==max(metric, na.rm=T)) %>%
+      dplyr::mutate(metric=ifelse((metric<=maxdoy),metric, maxdoy), n.14=n.14.term) 
   }
   return(ev.m)
 }
@@ -80,9 +95,9 @@ ev.metric = function(df1,               #dataframe of occurrences
 we.est = function(doys,     #vector of occurrence DOYs used in estimation
                   IfTerm) { #IF T, termination gives upper limit. F -> onset
   if(IfTerm) {  
-    suppressWarnings(weib_percentile(doys, 0.99)) 
+    try(suppressWarnings(weib_percentile(doys, 0.99)), silent=T)
   } else {
-    suppressWarnings(weib_percentile(doys, 0.01))
+    try(suppressWarnings(weib_percentile(doys, 0.01)), silent=T)
   }
 }
 
@@ -103,10 +118,10 @@ we.metric = function(df1,               #dataframe of occurrences
     if(elev.strat) {
       #Group & estimate effort by rndLat*year*elevation range
       weib<-df1 %>%
-        select(name, region, name2, rndLat, year, alt, doy, elev.yr) %>%
+        dplyr::select(name, region, name2, rndLat, year, alt, doy, elev.yr) %>%
         group_by(name,region,name2, rndLat, year, elev.yr) %>%
-        mutate(n.occ=length(unique(doy)),alt=min(alt, na.rm=T)) %>%
-        mutate(sampleEffort=(n.occ/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T)))) %>%
+        dplyr::mutate(n.occ=length(unique(doy)),alt=min(alt, na.rm=T)) %>%
+        dplyr::mutate(sampleEffort=(n.occ/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T)))) %>%
         filter(n.occ>=n.occ.threshold)
       if(nrow(weib)>=n.occ.threshold) {
         #Calculate phenometrics!
@@ -131,10 +146,10 @@ we.metric = function(df1,               #dataframe of occurrences
     } else if(elev.strat==F) {
       #Group & estimate effort by rndLat*year
       weib<-df1 %>%
-        select(name, region, name2, rndLat, year, alt, doy) %>%
+        dplyr::select(name, region, name2, rndLat, year, alt, doy) %>%
         group_by(name,region,name2, rndLat, year) %>%
-        mutate(n.occ=length(unique(doy)),alt=min(alt, na.rm=T)) %>%
-        mutate(sampleEffort=(n.occ/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T)))) %>%
+        dplyr::mutate(n.occ=length(unique(doy)),alt=min(alt, na.rm=T)) %>%
+        dplyr::mutate(sampleEffort=(n.occ/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T)))) %>%
         filter(n.occ>=n.occ.threshold)
       if(nrow(weib)>=n.occ.threshold) {
         #Calculate phenometrics!
@@ -160,10 +175,10 @@ we.metric = function(df1,               #dataframe of occurrences
   } else {
     #Group & estimate effort by rndLat
     weib<-df1 %>%
-      select(name, region, name2, rndLat, year, alt, doy) %>%
+      dplyr::select(name, region, name2, rndLat, year, alt, doy) %>%
       group_by(name,region,name2, rndLat) %>%
-      mutate(n.occ=length(unique(doy)), alt=min(alt, na.rm=T)) %>%
-      mutate(sampleEffort=(n.occ/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T)))) %>%
+      dplyr::mutate(n.occ=length(unique(doy)), alt=min(alt, na.rm=T)) %>%
+      dplyr::mutate(sampleEffort=(n.occ/(max(max(doy, na.rm=T)-min(doy, na.rm=T)+1,minFP, na.rm=T)))) %>%
       filter(n.occ>=n.occ.threshold) 
     if(nrow(weib)>=n.occ.threshold) {
       #Calculate phenometrics!
